@@ -1,68 +1,70 @@
-// Load environment variables from .env file
 require('dotenv').config();
-
 const express = require('express');
 const axios = require('axios');
 const app = express();
 
 app.use(express.json());
 
-// Webhook endpoint to receive messages from Maytapi
-app.post('/webhook', async (req, res) => {
-  // Log every incoming webhook request for debugging
-  console.log('Webhook received:', JSON.stringify(req.body, null, 2));
+const delegationLink = 'https://tinyurl.com/FFdelegation';
+const helpticketLink = 'https://tinyurl.com/helptikt';
+const stockfinderLink = 'https://tinyurl.com/stockfinder1';
 
-  // Safely extract the message and sender info
-  const message =
-    req.body.message?.text?.body ||
-    req.body.message?.text ||
-    req.body.message?.body;
-  // Use the sender's phone number (not the WhatsApp ID)
+app.post('/webhook', async (req, res) => {
+  const message = req.body.message?.text?.body || req.body.message?.text || req.body.message?.body;
   const from = req.body.user?.phone || req.body.message?.from;
 
-  console.log('Extracted message:', message);
-  console.log('Extracted sender phone:', from);
+  console.log('Webhook received:', message, 'from', from);
 
-  // If the message is "/", send the menu
   if (message && message.trim() === '/') {
-    const reply = `welcome please select any option from below
+    const menu = `welcome please select any option from below
 1. delegation
 2. helpticket
 3. Stock Enquiry`;
-
-    // Send the reply using Maytapi API
-    try {
-      const response = await axios.post(
-        `https://api.maytapi.com/api/${process.env.MAYTAPI_PRODUCT_ID}/${process.env.MAYTAPI_PHONE_ID}/sendMessage`,
-        {
-          to_number: from,
-          type: "text",
-          message: reply
-        },
-        {
-          headers: {
-            'x-maytapi-key': process.env.MAYTAPI_API_TOKEN,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      // Log the response from Maytapi for debugging
-      console.log('Message sent! Maytapi response:', response.data);
-    } catch (error) {
-      // Log any error that occurs while sending the message
-      if (error.response) {
-        console.error('Error sending message:', error.response.data);
-      } else {
-        console.error('Error sending message:', error.message);
-      }
-    }
+    await sendWhatsAppMessage(from, menu);
+    return res.sendStatus(200);
   }
 
-  // Always respond with status 200 to acknowledge receipt
+  if (message && message.trim() === '1') {
+    await sendWhatsAppMessage(from, delegationLink);
+    return res.sendStatus(200);
+  }
+
+  if (message && message.trim() === '2') {
+    await sendWhatsAppMessage(from, helpticketLink);
+    return res.sendStatus(200);
+  }
+
+  if (message && message.trim() === '3') {
+    await sendWhatsAppMessage(from, stockfinderLink);
+    return res.sendStatus(200);
+  }
+
+  // Ignore any other input
   res.sendStatus(200);
 });
 
-// Start the server
+async function sendWhatsAppMessage(to, message) {
+  try {
+    const response = await axios.post(
+      `https://api.maytapi.com/api/${process.env.MAYTAPI_PRODUCT_ID}/${process.env.MAYTAPI_PHONE_ID}/sendMessage`,
+      {
+        to_number: to,
+        type: "text",
+        message: message
+      },
+      {
+        headers: {
+          'x-maytapi-key': process.env.MAYTAPI_API_TOKEN,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    console.log('Message sent:', response.data);
+  } catch (error) {
+    console.error('Error sending message:', error.response?.data || error.message);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Bot running on port ${PORT}`);
