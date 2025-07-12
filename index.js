@@ -13,7 +13,10 @@ app.post('/webhook', async (req, res) => {
   console.log('Webhook received:', JSON.stringify(req.body, null, 2));
 
   // Safely extract the message and sender info
-  const message = req.body.message?.text?.body || req.body.message?.text || req.body.message?.body;
+  const message =
+    req.body.message?.text?.body ||
+    req.body.message?.text ||
+    req.body.message?.body;
   // Use the sender's phone number (not the WhatsApp ID)
   const from = req.body.user?.phone || req.body.message?.from;
 
@@ -30,7 +33,7 @@ app.post('/webhook', async (req, res) => {
     // Send the reply using Maytapi API
     try {
       const response = await axios.post(
-        `https://api.maytapi.com/api/${process.env.MAYTAPI_PRODUCT_ID}/sendMessage`,
+        `https://api.maytapi.com/api/${process.env.MAYTAPI_PRODUCT_ID}/${process.env.MAYTAPI_PHONE_ID}/sendMessage`,
         {
           to_number: from,
           type: "text",
