@@ -12,12 +12,16 @@ app.post('/webhook', async (req, res) => {
   // Log every incoming webhook request for debugging
   console.log('Webhook received:', JSON.stringify(req.body, null, 2));
 
-  // Safely extract message and sender info
-  const message = req.body.message?.text?.body;
-  const from = req.body.message?.from;
+  // Safely extract the message and sender info
+  const message = req.body.message?.text?.body || req.body.message?.text || req.body.message?.body;
+  // Use the sender's phone number (not the WhatsApp ID)
+  const from = req.body.user?.phone || req.body.message?.from;
+
+  console.log('Extracted message:', message);
+  console.log('Extracted sender phone:', from);
 
   // If the message is "/", send the menu
-  if (message === '/') {
+  if (message && message.trim() === '/') {
     const reply = `welcome please select any option from below
 1. delegation
 2. helpticket
@@ -43,7 +47,11 @@ app.post('/webhook', async (req, res) => {
       console.log('Message sent! Maytapi response:', response.data);
     } catch (error) {
       // Log any error that occurs while sending the message
-      console.error('Error sending message:', error.response?.data || error.message);
+      if (error.response) {
+        console.error('Error sending message:', error.response.data);
+      } else {
+        console.error('Error sending message:', error.message);
+      }
     }
   }
 
