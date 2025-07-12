@@ -7,9 +7,12 @@ const app = express();
 
 app.use(express.json());
 
-// This endpoint will receive messages from Maytapi
+// Webhook endpoint to receive messages from Maytapi
 app.post('/webhook', async (req, res) => {
-  // Extract message and sender info from the webhook payload
+  // Log every incoming webhook request for debugging
+  console.log('Webhook received:', JSON.stringify(req.body, null, 2));
+
+  // Safely extract message and sender info
   const message = req.body.message?.text?.body;
   const from = req.body.message?.from;
 
@@ -22,7 +25,7 @@ app.post('/webhook', async (req, res) => {
 
     // Send the reply using Maytapi API
     try {
-      await axios.post(
+      const response = await axios.post(
         `https://api.maytapi.com/api/${process.env.MAYTAPI_PRODUCT_ID}/sendMessage`,
         {
           to_number: from,
@@ -36,7 +39,10 @@ app.post('/webhook', async (req, res) => {
           }
         }
       );
+      // Log the response from Maytapi for debugging
+      console.log('Message sent! Maytapi response:', response.data);
     } catch (error) {
+      // Log any error that occurs while sending the message
       console.error('Error sending message:', error.response?.data || error.message);
     }
   }
